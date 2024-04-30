@@ -23,11 +23,12 @@ def make_valid(filename):
     f = f.replace('|', '_')
     f = f.replace('?', '_')
     f = f.replace('*', '_')
-    f = f.replace(' ', '_')
     return f
 
 
 def lyric_file_to_text(filename):
+    return
+    #dont care bout lyrics
     lrc_file = open(filename, 'r', encoding='utf-8')
     lrc_string = ''.join(lrc_file.readlines())
     lrc_file.close()
@@ -69,9 +70,9 @@ def fill_metadata(filename, filetype, album, title, albumartist, artist, tracknu
         file = ID3(filename)
         file.add(APIC(mime='image/png',type=3,desc='Cover',data=open(albumcover,'rb').read()))
         # Read and add lyrics
-        if (songlyricpath != None):
-            sylt = lyric_file_to_text(songlyricpath)
-            file.setall('SYLT', [SYLT(encoding=Encoding.UTF8, lang='eng', format=2, type=1, text=sylt)])
+        #if (songlyricpath != None):
+        #    sylt = lyric_file_to_text(songlyricpath)
+        #    file.setall('SYLT', [SYLT(encoding=Encoding.UTF8, lang='eng', format=2, type=1, text=sylt)])
         file.save()
     else:
         image = Picture()
@@ -111,23 +112,41 @@ def download_song(session, directory, name, url):
         total=total,
         unit='iB',
         unit_scale=True,
-        unit_divisor=1024,
+        unit_divisor=2048,
     ) as bar:
-        for data in source.iter_content(chunk_size = 1024):
+        for data in source.iter_content(chunk_size = 2048):
             size = f.write(data)
             bar.update(size)
 
     # If file is .wav then export to .flac
+
+    """
     if source.headers['content-type'] != 'audio/mpeg':
         AudioSegment.from_wav(filename).export(directory + '/' + make_valid(name) + '.flac', format='flac')
         os.remove(filename)
         filename = directory + '/' + make_valid(name) + '.flac'
         filetype = '.flac'
+    """
+    if source.headers['content-type'] != 'audio/mpeg':
+        #export as 265kb/s mp3 file, can change bitrate if you want
+        AudioSegment.from_wav(filename).export(directory + '/' + make_valid(name) + '.mp3', bitrate="256k", format='mp3')
+        os.remove(filename)
+        filename = directory + '/' + make_valid(name) + '.mp3'
+        filetype = '.mp3'
 
     return filename, filetype
+    #"""
 
-
-def download_album( args):
+def download_album(args):
+    print(args)
+    string = str(args)
+    #change this to the title (or part of the title) of the album you want to download from the website
+    title = "ONE"
+    if title in string:
+        print("success", args)
+        #return
+    else:
+        return
     directory = args['directory']
     session = args['session']
     queue = args['queue']
@@ -150,18 +169,18 @@ def download_album( args):
         return
 
     try:
-        os.mkdir(directory + make_valid(album_name))
+        os.mkdir(directory + album_name)
     except:
         pass
 
     # Download album art
-    with open(directory + make_valid(album_name) + '/cover.jpg', 'w+b') as f:
+    with open(directory + album_name + '/cover.jpg', 'w+b') as f:
         f.write(session.get(album_coverUrl).content)
 
     # Change album art from .jpg to .png
-    cover = Image.open(directory + make_valid(album_name) + '/cover.jpg')
-    cover.save(directory + make_valid(album_name) + '/cover.png')
-    os.remove(directory + make_valid(album_name) + '/cover.jpg')
+    cover = Image.open(directory + album_name + '/cover.jpg')
+    cover.save(directory + album_name + '/cover.png')
+    os.remove(directory + album_name + '/cover.jpg')
 
 
     songs = session.get(album_url, headers={'Accept': 'application/json'}).json()['data']['songs']
@@ -177,14 +196,14 @@ def download_album( args):
 
         # Download lyric
         if (song_lyricUrl != None):
-            songlyricpath = directory + make_valid(album_name) + '/' + make_valid(song_name) + '.lrc'
+            songlyricpath = directory + album_name + '/' + make_valid(song_name) + '.lrc'
             with open(songlyricpath, 'w+b') as f:
                 f.write(session.get(song_lyricUrl).content)
         else:
             songlyricpath = None
 
         # Download song and fill out metadata
-        filename, filetype = download_song(session=session, directory=directory + make_valid(album_name), name=song_name, url=song_sourceUrl)
+        filename, filetype = download_song(session=session, directory=directory + album_name, name=song_name, url=song_sourceUrl)
         fill_metadata(filename=filename,
                         filetype=filetype,
                         album=album_name,
@@ -192,7 +211,7 @@ def download_album( args):
                         albumartist=album_artistes,
                         artist=song_artists,
                         tracknumber=song_track_number,
-                        albumcover=directory + make_valid(album_name) + '/cover.png',
+                        albumcover=directory + album_name + '/cover.png',
                         songlyricpath=songlyricpath)
     
     # Mark album as finished
@@ -219,9 +238,12 @@ def main():
         album['directory'] = directory
         album['session'] = session
         album['queue'] = queue
+        #print(album)
 
 
     with Pool(maxtasksperchild=1) as pool:
+        #print("test: \n")
+        #print(albums)
         pool.apply_async(update_downloaded_albums, (queue, directory))
         pool.map(download_album, albums)
         queue.put('kill')
