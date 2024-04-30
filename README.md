@@ -1,5 +1,6 @@
 Tested on Ubuntu and Python 3
 
+A simple fork of 1n0r1's Monster Siren Records Downloader. Modified by me to convert into MP3's, and only single albums at a time. (My car doesn't let me play WAV audio files)
 
 A simple script to download all your favorite Arknights OSTs from monster-siren.hypergryph.com
 
