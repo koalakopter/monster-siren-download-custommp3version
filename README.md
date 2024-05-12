@@ -4,11 +4,7 @@ A simple fork of 1n0r1's Monster Siren Records Downloader. Modified by me to con
 
 A simple script to download all your favorite Arknights OSTs from monster-siren.hypergryph.com
 
-Download all songs, albums and fill out metadata, album, cover art, artists and even lyrics
-
-### Note:
-
-The API offers .mp3 and .wav, but the program convert .wav to .flac since .wav can't do metadata.
+Download specific songs, albums and fill out metadata, album, cover art, artists (no lyrics because who needs those?)
 
 ### Requirements:
 
